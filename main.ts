@@ -148,12 +148,12 @@ me.setPosition(20, 20)
 me.setStayInScreen(true)
 setup_skull()
 scene.setBackgroundImage(assets.image`background`)
-is_moving = false
-acceleration = 8
-deceleration = 0.9
 timer.after(randint(3500, 5000), function () {
     fire()
 })
+is_moving = false
+acceleration = 8
+deceleration = 0.9
 game.onUpdate(function () {
     movement()
     move_check()
