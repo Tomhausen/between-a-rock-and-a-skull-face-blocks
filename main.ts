@@ -16,14 +16,41 @@ function setup_skull () {
     true
     )
 }
+function spawn_rocks (rock: Sprite) {
+    timer.background(function () {
+        spriteutils.placeAngleFrom(
+        rock,
+        randint(0, spriteutils.consts(spriteutils.Consts.Pi) * 2),
+        35,
+        spriteutils.pos(80, 60)
+        )
+        anim = assets.animation`entry`
+        frame_len = 100
+        scene.cameraShake(4, anim.length * frame_len)
+        animation.runImageAnimation(
+        rock,
+        anim,
+        frame_len,
+        false
+        )
+        pause(randint(2500, 8000))
+        anim = assets.animation`entry`
+        anim.reverse()
+        rock.lifespan = frame_len * anim.length
+        animation.runImageAnimation(
+        rock,
+        anim,
+        frame_len,
+        false
+        )
+    })
+}
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Projectile, function (player2, proj) {
     game.over(false)
 })
 function fire () {
     for (let index = 0; index < randint(1, 3); index++) {
-        timer.background(function () {
-            spawn_rock()
-        })
+        spawn_rocks(sprites.create(image.create(16, 16), SpriteKind.rock))
     }
     pause(500)
     music.play(music.melodyPlayable(music.buzzer), music.PlaybackMode.UntilDone)
@@ -65,33 +92,6 @@ function generate_projectiles (time: number) {
         angle += 10
     }
 }
-function spawn_rock () {
-    rock_sprite = sprites.create(image.create(16, 16), SpriteKind.rock)
-    spriteutils.placeAngleFrom(
-    rock_sprite,
-    randint(0, spriteutils.consts(spriteutils.Consts.Pi) * 2),
-    35,
-    spriteutils.pos(80, 60)
-    )
-    anim = assets.animation`entry`
-    frame_len = 100
-    scene.cameraShake(4, anim.length * frame_len)
-    animation.runImageAnimation(
-    rock_sprite,
-    anim,
-    frame_len,
-    false
-    )
-    pause(randint(2500, 8000))
-    rock_sprite.lifespan = frame_len * anim.length
-    anim.reverse()
-    animation.runImageAnimation(
-    rock_sprite,
-    anim,
-    frame_len,
-    false
-    )
-}
 sprites.onOverlap(SpriteKind.Projectile, SpriteKind.rock, function (proj, rock) {
     proj.destroy()
 })
@@ -127,23 +127,17 @@ sprites.onOverlap(SpriteKind.rock, SpriteKind.rock, function (rock, other_rock) 
     sprites.allOfKind(SpriteKind.rock).pop().destroy()
 })
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (player2, skull) {
-    controller.moveSprite(me, 0, 0)
     player2.sayText("ow", 500)
     angle = spriteutils.angleFrom(skull, player2)
     spriteutils.setVelocityAtAngle(player2, angle, 150)
-    timer.after(100, function () {
-        controller.moveSprite(me)
-        me.setVelocity(0, 0)
-    })
 })
-let frame_len = 0
-let anim: Image[] = []
-let rock_sprite: Sprite = null
 let proj: Sprite = null
 let fire_angle = 0
 let angle = 0
 let start = 0
 let arc_size = 0
+let frame_len = 0
+let anim: Image[] = []
 let skull: Sprite = null
 let deceleration = 0
 let acceleration = 0
@@ -154,12 +148,12 @@ me.setPosition(20, 20)
 me.setStayInScreen(true)
 setup_skull()
 scene.setBackgroundImage(assets.image`background`)
+is_moving = false
+acceleration = 8
+deceleration = 0.9
 timer.after(randint(3500, 5000), function () {
     fire()
 })
-is_moving = false
-acceleration = 8
-deceleration = 0
 game.onUpdate(function () {
     movement()
     move_check()
