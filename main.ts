@@ -1,5 +1,6 @@
 namespace SpriteKind {
     export const rock = SpriteKind.create()
+    export const player_projectile = SpriteKind.create()
 }
 function setup_skull () {
     skull = sprites.create(assets.image`flaming skull`, SpriteKind.Enemy)
@@ -46,7 +47,13 @@ function spawn_rocks (rock: Sprite) {
     })
 }
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Projectile, function (player2, proj) {
-    game.over(false)
+    if (is_blocking) {
+        proj.setKind(SpriteKind.player_projectile)
+        angle = spriteutils.angleFrom(player2, skull)
+        spriteutils.setVelocityAtAngle(proj, angle, 40)
+    } else {
+        game.over(false)
+    }
 })
 function fire () {
     for (let index = 0; index < randint(1, 3); index++) {
@@ -92,8 +99,25 @@ function generate_projectiles (time: number) {
         angle += 10
     }
 }
+controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
+    timer.throttle("block", 2000, function () {
+        me.setImage(assets.image`block`)
+        is_blocking = true
+        pause(1000)
+        me.setImage(assets.image`me`)
+        is_blocking = false
+    })
+})
 sprites.onOverlap(SpriteKind.Projectile, SpriteKind.rock, function (proj, rock) {
     proj.destroy()
+})
+sprites.onOverlap(SpriteKind.Enemy, SpriteKind.player_projectile, function (sprite, otherSprite) {
+    boss_health = statusbars.getStatusBarAttachedTo(StatusBarKind.EnemyHealth, sprite)
+    boss_health.value += -5
+    sprites.destroy(otherSprite)
+})
+statusbars.onZero(StatusBarKind.EnemyHealth, function (status) {
+    game.over(true)
 })
 sprites.onOverlap(SpriteKind.Player, SpriteKind.rock, function (player2, rock) {
     angle = spriteutils.angleFrom(rock, player2)
@@ -133,12 +157,14 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (player2, skull)
 })
 let proj: Sprite = null
 let fire_angle = 0
-let angle = 0
 let start = 0
 let arc_size = 0
+let angle = 0
 let frame_len = 0
 let anim: Image[] = []
+let is_blocking = false
 let skull: Sprite = null
+let boss_health: StatusBarSprite = null
 let deceleration = 0
 let acceleration = 0
 let is_moving = false
@@ -154,6 +180,9 @@ timer.after(randint(3500, 5000), function () {
 is_moving = false
 acceleration = 8
 deceleration = 0.9
+boss_health = statusbars.create(20, 4, StatusBarKind.EnemyHealth)
+boss_health.attachToSprite(skull, 0, 0)
+is_blocking = true
 game.onUpdate(function () {
     movement()
     move_check()
